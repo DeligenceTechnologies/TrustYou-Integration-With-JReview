@@ -1,0 +1,323 @@
+<?php
+/**
+ * JReviews - Reviews Extension
+ * Copyright (C) 2010-2015 ClickFWD LLC
+ * This is not free software, do not distribute it.
+ * For licencing information visit https://www.jreviews.com
+ * or contact sales@jreviews.com
+**/
+defined( 'MVC_FRAMEWORK') or die( 'Direct Access to this location is not allowed.' );
+
+/**********************************************************************************
+ * 								CONFIGURATION AND SETUP
+ **********************************************************************************/
+
+// Media Setup
+$mainMedia = Sanitize::getVar($listing,'MainMedia');
+
+$main_media_tn_size = Sanitize::getString($this->Config,'media_detail_main_thumbnail_size');
+
+$main_media_tn_mode = Sanitize::getString($this->Config,'media_detail_main_thumbnail_mode');
+
+$photo_layout = Sanitize::getString($this->Config,'media_detail_photo_layout');
+
+$video_layout = Sanitize::getString($this->Config,'media_detail_video_layout');
+
+$snippetsImage = $Media->thumb($mainMedia,array('size'=>$main_media_tn_size,'mode'=>$main_media_tn_mode, 'return_src'=>true),array('class'=>'photo')); /* Structured Data */
+
+// Related listings tab setup
+$related_listings_enabled = 0;
+
+$related_listings = Sanitize::getVar($this->viewVars['listing']['ListingType']['config'],'relatedlistings',array());
+
+$userfavorites = Sanitize::getVar($this->viewVars['listing']['ListingType']['config'],'userfavorites',array());
+
+foreach ($related_listings AS $related_listing) {
+
+	if(Sanitize::getInt($related_listing,'enable',0)) {
+		$related_listings_enabled = 1;
+	}
+
+	elseif (Sanitize::getInt($userfavorites,'enable',0)) {
+		$related_listings_enabled = 1;
+	}
+}
+
+// Change to 1 if you want each field group to output inside its own tab
+$separate_field_groups = 0;
+
+// Prepare field groups to output in separate tabs
+if ($separate_field_groups) {
+	$groups = array();
+	foreach($listing['Field']['groups'] AS $group=>$fields){
+	    $groups[$group] = array($group=>$fields);
+	}
+}
+
+// Map
+$show_map = Sanitize::getBool($this->Config,'geomaps.enable_map_detail',true);
+
+$featured = Sanitize::getInt($listing['Listing'],'featured') ? ' jrFeatured' : '';
+
+// Schema.org
+$schema_itemtype = Sanitize::getString($this->Config,'schema_org_type','Article');
+
+// Summary/Description characters limit
+$char_limit = Sanitize::getInt($this->Config,'summary_desc_char_limit');
+
+/**********************************************************************************
+ * 								META DATA
+ **********************************************************************************/
+if($this->action == 'detail') $this->element('page_meta');
+
+/**********************************************************************************
+ * 								EDIT HTML BELOW THIS LINE
+ **********************************************************************************/?>
+
+<div class="jr-page jr-layout-outer jr-listing-detail jrPage jrListingDetail<?php echo $featured; ?>" itemscope itemtype="http://schema.org/<?php echo $schema_itemtype; ?>">
+
+	<?php if($extension != 'com_content'): // For Everywhere Extensions ?>
+
+		<h1 class="contentheading"><?php echo $listing['Listing']['title']?></h1>
+
+		<?php /* BREADCRUMB */ ?>
+
+		<div class="jrPathway"><?php echo $listing['Category']['title'];?></div>
+
+		<div class="jrClear"></div>
+       
+
+	<?php else: // For COM_CONTENT ?>
+
+		<?php /* RSS FEED */ ?>
+
+		<?php $Jreviews->listingDetailFeed($listing);?>
+
+		<?php /* BREADCRUMB */ ?>
+
+		<?php isset($crumbs) and $Jreviews->listingDetailBreadcrumb($crumbs);?>
+
+		<h1 class="contentheading">
+
+			<span itemprop="name"><?php echo $this->action == 'detail' ? $Routes->content($listing['Listing']['title'],$listing) : $listing['Listing']['title'];?></span>
+
+			<?php /* LISTING STATUS LABELS */ ?>
+
+			<?php $Jreviews->listingStatusLabels($listing);?>
+
+		</h1>
+        
+
+		<?php if($snippetsImage):?><meta itemprop="image" content="<?php echo $snippetsImage;?>"><?php endif;?>
+
+		<?php /* LISTING OWNER INFO */ ?>
+
+		<div class="jrAuthorInfo">
+
+			<?php if($this->Config->list_show_author):?>
+
+				<?php echo $Community->avatar($listing) . $Community->screenName($listing);?>&nbsp;&nbsp;
+
+			<?php endif;?>
+
+			<?php if($this->Config->list_show_date):?>
+
+				<?php echo $Time->nice($listing['Listing']['created']);?>&nbsp;&nbsp;
+
+			<?php endif;?>
+
+		</div>
+
+		<div class="jrListingInfoContainer">
+
+			<div class="jrListingInfo<?php if($this->name == 'listings'):?> jrNoButtons<?php endif;?>">
+
+				<?php /* OVERALL RATING */ ?>
+
+				<?php echo $Rating->overallRatings($listing, 'content'); ?>
+
+				<?php /* LISTING INFO ICONS */ ?>
+
+				<?php $Jreviews->listingInfoIcons($listing);?>
+				
+			</div>
+ 			 <!-- Added by santosh -->
+             	 <?php if($listing['Listing']['trustyou_reviews_count'] != 0 and $listing['Listing']['trustyou_score_description'] != '' and $listing['Listing']['trustyou_score'] != 0){ 
+				 		if($listing['Listing']['trustyou_score'] >=0 and $listing['Listing']['trustyou_score'] <= 67){
+							$bgcolor='#f37159';	
+						} elseif($listing['Listing']['trustyou_score'] >=68 and $listing['Listing']['trustyou_score'] <= 74){
+							$bgcolor='#f9c015';	
+						}else if($listing['Listing']['trustyou_score'] >=75 and $listing['Listing']['trustyou_score'] <= 100){
+							$bgcolor='#119a11';	
+						}
+				 
+				 ?>
+                 <div  style="width:158px;float: left; padding-bottom:10px; padding-left:5px;">
+						<div  style="background-color:<?php echo $bgcolor; ?>; float:left; padding: 7px 13px; font-size:24px; color:#fff; font-weight:600; margin-top:5px;"><span style="vertical-align:middle;"><?php echo $listing['Listing']['trustyou_score']; ?></span></div>
+                        
+                        
+                        <div style="float:right; width:100px; padding-left:5px;">
+                         <div style=" display:inline-block;">
+                         	<div style="background-color:#f37159; width:7px; height:7px; float:left;margin-right:2px;"></div>
+                            <div style="background-color:#f9c015; width:7px; height:7px; float:left;margin-right:2px;"></div>
+							<div style="background-color:#119a11; width:7px; height:7px; float:left;margin-right:2px;"></div>
+                         </div>
+                         <div style="font-size: 16px;font-weight: 600; color: <?php echo $bgcolor; ?>;"><?php echo $listing['Listing']['trustyou_score_description']; ?></div>
+                         <div style="margin-top: 4px;color: #999;font-weight: 500;font-style: italic; font-size: .65em;"><?php echo $listing['Listing']['trustyou_reviews_count']; ?> Reviews</div>
+                        
+                        </div>
+				</div>		
+					
+				<?php }	?>
+                <!-- End of santosh -->
+			<?php if($this->name != 'listings'): // Only show when in com_content page?>
+
+				<?php /* LISTING ACTIONS BUTTONS */ ?>
+
+				<div class="jrListingInfoButtons">
+
+					<?php $Widgets->listingDetailButtons($listing);?>
+
+				</div>
+
+			<?php endif;?>
+
+		</div>
+
+	<?php endif;?>
+
+	<?php if($this->name != 'listings'): // Only show when in com_content page?>
+
+		<?php /* MEDIA TOP - MAIN MEDIA AND COMPACT LAYOUT */ ?>
+
+		<?php echo $this->element('listing_detail_media',array('position'=>'top','mainMedia'=>$mainMedia));?>
+
+
+
+<?php /* CUSTOM FIELDS */ ?>
+<?php echo $CustomFields->displayAll($listing,'content');?>
+
+		<?php /* CUSTOM MODULE POSITION - jr-detail-below-fields */ ?>
+
+		<s2:nocache><?php $Jreviews->loadModulePosition('jr-detail-below-fields'); ?></s2:nocache>
+
+		<?php $Jreviews->loadPosition('below-fields', $addonPosition); ?>
+
+<div class="jrClear"></div>
+<div class="jr-tabs jrTabs">
+
+			<ul>
+            
+            	 <!-- Added by santosh -->
+                <?php
+				 if($listing['Listing']['trustyou_id'] != ''){
+				 ?>
+                 <li><a href="#reviewsTab"><span class="jrIconUsers"></span><?php __t("TrustYou Reviews");?></a></li>
+                 <?php } ?>
+				<!-- End of santosh -->
+                
+                <?php if($listing['Criteria']['state'] == 1):?>
+					<li><a href="#trustyou"><span class="jrIconComments"></span><?php __t("User Reviews");?></a></li>
+				<?php elseif($listing['Criteria']['state'] == 2):?>
+					<li><a href="#trustyou"><span class="jrIconComments"></span><?php __t("Comments");?></a></li>
+				<?php endif;?>
+            
+				<?php if ($separate_field_groups): ?>
+
+			    <?php $i=0;foreach($groups AS $group_name=>$fieldGroup):$i++;?>
+			    <li><a href="#field_group<?php echo $i;?>"><span><?php echo $fieldGroup[$group_name]['Group']['title'];?></span></a></li>
+			    <?php endforeach;?>
+
+				<?php else:?>
+				<li><a href="#fieldsTab"><?php __t("Details");?></a></li>
+				<?php endif;?>
+				
+
+				<?php if($show_map && isset($listing['Geomaps']) && abs($listing['Geomaps']['lat']) > 0 && abs($listing['Geomaps']['lon']) > 0):?>
+					<li><a href="#mapTab"><span class="jrIconMap"></span><?php __t("Map");?></a></li>
+				<?php endif;?>
+
+				
+
+				<?php if($related_listings_enabled):?>
+					<li class="jrHidden"><a href="#jrRelatedListings"><?php __t("Related Listings");?></a></li>
+				<?php endif;?>
+               
+
+			</ul>
+
+			<?php echo $this->element('listing_detail_media',array('position'=>'bottom-tabs','mainMedia'=>$mainMedia));?>
+
+			<?php if ($separate_field_groups): ?>
+
+		    <?php $i=0;foreach($groups AS $group_name=>$fieldGroup):$i++;?>
+		    <div id="field_group<?php echo $i;?>"><?php echo $CustomFields->displayAll($listing,'content',$group_name);?></div>
+		    <?php endforeach;?>
+
+    		<?php else:?>
+			<div id="fieldsTab">
+
+			<?php /* SUMMARY - DESCRIPTION */ ?>
+
+
+			<?php echo $listing['Listing']['text'] !== strip_tags($listing['Listing']['text']) ? $listing['Listing']['text'] : nl2br($listing['Listing']['text']);?>
+		<?php if(!$CustomFields->field('jr_fulltext',$listing,false,false)):?>
+More details coming soon
+<?php endif;?>
+</div>
+
+			<?php endif;?>
+
+			<?php if($show_map && isset($listing['Geomaps']) && abs($listing['Geomaps']['lat']) > 0 && abs($listing['Geomaps']['lon']) > 0):?>
+
+			<div id="mapTab">
+
+				<?php echo $this->renderControllerView('geomaps','map_detail');?>
+
+				<div class="jrClear"></div>
+
+			</div>
+
+			<?php endif;?>
+
+			<?php if($listing['Criteria']['state'] != 0):?>
+
+			<div id="trustyou">
+
+				<?php /* USER REVIEWS */ ?>
+
+				<?php echo $this->renderControllerView('reviews','user_reviews',array('reviews'=>$reviews,'listing'=>$listing));?>
+
+				<?php $Jreviews->loadPosition('below-userreviews', $addonPosition); ?>
+
+			</div>
+
+			<?php endif;?>
+            <!-- Added by santosh -->
+                 <?php
+				 if($listing['Listing']['trustyou_id'] != ''){
+				 ?>
+                  <div id="reviewsTab">
+				 <iframe src="http://api.trustyou.com/hotels/<?php echo $listing['Listing']['trustyou_id']; ?>/meta_review.html" allowtransparency="true" frameborder="0" height="600" width="100%">                </iframe>
+                 </div>
+                 <?php } ?>
+			<!-- End of santosh -->
+			<?php if($related_listings_enabled):?><div id="jrRelatedListings"></div><?php endif;?>
+
+		</div>
+
+	<?php else: ?>
+
+		<?php /* USER REVIEWS */ ?>
+
+		<?php echo $this->renderControllerView('reviews','user_reviews',array('reviews'=>$reviews,'listing'=>$listing));?>
+
+	<?php endif;?>
+
+</div>
+
+<?php if($related_listings_enabled && $this->name != 'listings'):?>
+	<?php $Widgets->relatedListingsJS($listing); /* Creates an javascript object with data for widget calls */ ?>
+<?php endif;?>
+
+		

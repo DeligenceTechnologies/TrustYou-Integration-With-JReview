@@ -1,0 +1,316 @@
+<?php
+/**
+ * JReviews - Reviews Extension
+ * Copyright (C) 2010-2013 ClickFWD LLC
+ * This is not free software, do not distribute it.
+ * For licencing information visit http://www.reviewsforjoomla.com
+ * or contact sales@reviewsforjoomla.com
+**/
+defined('MVC_FRAMEWORK') or die( 'Direct Access to this location is not allowed.' );
+
+/********************** [OST START] *****************************************/
+
+/* Adding New Link*/
+
+					$url_params = JRequest::get( 'GET' );					
+					unset($url_params['option']);	
+					$slink = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+					$cr =$url_params['criteria'];
+					
+		if( $cr == 1 ){
+		
+					/*echo "<a href=$slink class='jrButton jrLarge active-rs' style='background: none repeat scroll 0 0 #004762;color: #FFFFFF !important;margin-right:5px;' >Accommodations</a>";*/
+					$url_params['criteria']='2';
+					unset($url_params['page']);
+					$slink=str_replace("page=", "pages=", $slink);
+					$slink=str_replace("criteria=1", "criteria=2", $slink);
+					/*echo "<a href=$slink class='jrButton jrLarge' id='att_link' style='display:none;'>Attractions</a>";
+                                        echo"<br/><br/>";*/
+	 		      }
+
+		if( $cr == 2){	
+				/*echo "<a href=$slink class='jrButton jrLarge active-rs' style='background: none repeat scroll 0 0 #004762;
+    color: #FFFFFF !important;margin-right:5px;' >Attractions</a>";*/
+				$url_params['criteria']='1';
+				$slink=str_replace("criteria=2", "criteria=1", $slink);
+				/*echo "<a href=$slink class='jrButton jrLarge' id='att_link' style='display:none;'>Accommodations</a>";
+                                echo"<br/><br/>";*/
+		     }				
+				 $url = 'index.php?option=com_jreviews&tmpl=component&'.JURI::buildQuery($url_params);
+				 
+				 echo "<br>";
+				 //DT code to get url code to run the following javascript
+				 $uri = & JFactory::getURI(); 
+				 $pageURL = $uri->toString(); 
+				 //DT end here
+?>
+
+
+<script>
+jQuery(document).ready(function()
+    {
+  
+	var lnk ='<?php echo "$pageURL" ;	
+	//echo "$url"; ?>';
+         console.log(lnk );  
+      jQuery.ajax(
+            {
+                type:'POST',
+                url: lnk,
+                success: function(result)
+                {
+                var data = result.search("Your search did"+" not return any results. Try adjusting your search values.");
+		console.log(lnk);
+		if(data === -1)
+		{
+			jQuery('#att_link').css('display','inline');
+  			
+		}
+			
+           
+                }
+            });  
+
+});
+
+</script>
+<?php
+	//[OST-END]
+
+
+/**********************************************************************************
+ * 								PAGINATION HELPER
+ **********************************************************************************/
+$Paginator->paginate(array(
+		'current_page'=>$this->page,
+		'items_per_page'=>$this->limit,
+		'items_total'=>$pagination['total'],
+));
+
+
+// Add page meta tags - must go after Paginator helper
+echo $this->element('page_meta');
+
+// Map
+$show_map = (!isset($GeomapsCenter) /*not proximity search*/ && Sanitize::getBool($this->Config,'geomaps.enable_map_list',true))
+			||
+			(isset($GeomapsCenter) /*proximity search*/ && Sanitize::getBool($this->Config,'geomaps.enable_map_search',true))
+			;
+
+/**********************************************************************************
+ * 								EDIT HTML BELOW THIS LINE
+ **********************************************************************************/?>
+
+ <div class="jr-page jrPage jrListings jrBlogview">
+
+ 	<?php /* PAGE HEADER */ ?>
+
+	<?php echo $this->renderControllerView('listings','listings_header');?>
+
+ 	<?php /* PAGINATION */ ?>
+
+	<?php echo $this->element('pagination',array('position'=>'top','orderList'=>$order_list));?>
+
+ 	<?php /* LISTING LIST */ ?>
+
+	<?php if(!empty($listings)):?>
+
+	<div class="jrResults">
+
+		<div <?php if($show_map == true): ?>id="jr-listing-column" class="jrListingColumn"<?php endif;?>>
+
+		<?php $i = 2; $j = 0; foreach($listings AS $listing): $i = $i == 2 ? 1 : 2; $j++;?>
+
+			<?php
+			/***************************************************************
+			 ************ SET CONFIG OVERRIDES FOR EACH LISTING ************
+			 ***************************************************************/
+
+			$featured = ($listing['Listing']['featured']) ? ' jrFeatured' : '';
+
+			$tn_size = $this->Config->getOverride('media_list_thumbnail_size',$listing['ListingType']['config']);
+
+			$tn_mode = $this->Config->getOverride('media_list_thumbnail_mode',$listing['ListingType']['config']);
+			?>
+
+			<div class="jr-layout-outer jrListItem row<?php echo $i;?><?php echo $featured; ?>">
+
+				<div class="jrListingContent">
+
+
+                                       <div class="jrOstContent">
+					<div class="jrContentTitle"><?php if($CustomFields->fieldText('jr_website',$listing,false,false) != ''):?>
+    <a href="<?php echo $CustomFields->fieldText('jr_website',$listing,false,false);?>" target="_blank" class='jr_listingTitle'><?php echo $listing['Listing']['title'];?></a>
+  <?php else:?>
+                    <?php echo $Routes->content($listing['Listing']['title'],$listing,array('id'=>'jr-listing-title-'.$listing['Listing']['listing_id']))?>
+ <?php endif;?>
+						
+<?php /* LISTING STATUS LABELS */ ?>
+						
+
+					</div>
+
+					<?php /* OVERALL RATINGS */ ?>
+
+					<?php echo $Rating->overallRatings($listing, 'list');?>
+					<div class="clear"></div>
+                    <!-- Added by santosh -->
+             	 <?php if($listing['Listing']['trustyou_reviews_count'] != 0 and $listing['Listing']['trustyou_score_description'] != '' and $listing['Listing']['trustyou_score'] != 0){ 
+				 		if($listing['Listing']['trustyou_score'] >=0 and $listing['Listing']['trustyou_score'] <= 67){
+							$bgcolor='#f37159';	
+						} elseif($listing['Listing']['trustyou_score'] >=68 and $listing['Listing']['trustyou_score'] <= 74){
+							$bgcolor='#f9c015';	
+						}else if($listing['Listing']['trustyou_score'] >=75 and $listing['Listing']['trustyou_score'] <= 100){
+							$bgcolor='#119a11';	
+						}
+				 
+				 ?>
+                 <div align="left" style="width:158px;float: right;">
+						<div  style="background-color:<?php echo $bgcolor; ?>; float:left; padding: 7px 13px; font-size:24px; color:#fff; font-weight:600; margin-top:5px;"><span style="vertical-align:middle;"><?php echo $listing['Listing']['trustyou_score']; ?></span></div>
+                        
+                        
+                        <div style="float:right; width:100px;">
+                         <div style=" display:inline-block;">
+                         	<div style="background-color:#f37159; width:7px; height:7px; float:left;margin-right:2px;"></div>
+                            <div style="background-color:#f9c015; width:7px; height:7px; float:left;margin-right:2px;"></div>
+							<div style="background-color:#119a11; width:7px; height:7px; float:left;margin-right:2px;"></div>
+                         </div>
+                         <div style="font-size: 16px;font-weight: 600; color: <?php echo $bgcolor; ?>;"><?php echo $listing['Listing']['trustyou_score_description']; ?></div>
+                         <div style="margin-top: 4px;color: #999;font-weight: 500;font-style: italic; font-size: .65em;"><?php echo $listing['Listing']['trustyou_reviews_count']; ?> Reviews</div>
+                        
+                        </div>
+				</div>		
+					
+				<?php }	?>
+                <!-- End of santosh -->
+					</div>
+
+					<div class="jrListingInfo">
+										<?php if($this->Config->media_list_thumbnail && $mainMediaThumb = $Media->thumb(Sanitize::getVar($listing,'MainMedia'),array('listing'=> &$listing,'size'=>$tn_size,'mode'=>$tn_mode))):?>
+
+						<div class="jrListingThumbnail">
+
+							<?php echo $Routes->content($mainMediaThumb,$listing);?>
+
+						</div>
+
+					<?php endif;?>
+
+						<?php if($this->action!='category'):?>
+
+							<?php /* CATEGORY */ ?>
+
+							<?php echo $listing['Category']['title'];?><br />
+
+						<?php endif;?>
+
+						<?php /* LISTING OWNER */ ?>
+
+						<?php if($this->Config->getOverride('list_show_author',$listing['ListingType']['config'])):?><?php __t("Written by");?> <?php echo $Community->screenName($listing);?>&nbsp;&nbsp;&nbsp;&nbsp;<?php endif;?>
+
+						<?php if($this->Config->getOverride('list_show_date',$listing['ListingType']['config'])):?><?php echo $Time->nice($listing['Listing']['created']);?>&nbsp;&nbsp;&nbsp;&nbsp;<?php endif;?>
+
+						<?php /* LISTING INFO ICONS */ ?>
+
+						
+
+					
+
+					<?php /* CUSTOM FIELDS */ ?>
+
+					<?php echo $CustomFields->displayAll($listing,'list');?>
+					</div>
+					
+
+					<?php /* SUMMARY */ ?>
+
+					<?php
+					$list_show_abstract = $listing['Listing']['summary'] != '' && $this->Config->getOverride('list_show_abstract',$listing['ListingType']['config']);
+
+					$list_abstract_trim = $this->Config->getOverride('list_abstract_trim',$listing['ListingType']['config']);
+
+					if($list_show_abstract && ($list_abstract_trim != '' || $list_abstract_trim > 0)):?>
+
+						<div class="jrListingSummary">
+
+							<?php echo $Text->truncateWords($listing['Listing']['summary'],$list_abstract_trim);?>
+
+						</div>
+
+					<?php elseif($list_show_abstract == 1):?>
+
+						<div class="jrListingSummary">
+
+							<?php echo $listing['Listing']['summary'];?>
+
+						</div>
+
+					<?php endif;?>
+
+				</div>
+
+				<?php /* LISTING ACTIONS BUTTONS */ ?>
+
+				<div class="jrListingActions">
+
+					<?php $Widgets->listPageButtons($listing);?>
+
+				</div>
+
+			</div>
+
+			<?php if ($j == 1): ?>
+
+					<?php /* CUSTOM MODULE POSITION - jr-blogview-below-listing1 */ ?>
+
+					<?php $Jreviews->loadModulePosition('jr-blogview-below-listing1'); ?>
+
+			<?php endif; ?>
+
+			<?php if ($j == 2): ?>
+
+					<?php /* CUSTOM MODULE POSITION - jr-blogview-below-listing2 */ ?>
+
+					<?php $Jreviews->loadModulePosition('jr-blogview-below-listing2'); ?>
+
+			<?php endif; ?>
+
+			<?php if ($j == 3): ?>
+
+					<?php /* CUSTOM MODULE POSITION - jr-blogview-below-listing3 */ ?>
+
+					<?php $Jreviews->loadModulePosition('jr-blogview-below-listing3'); ?>
+
+			<?php endif; ?>
+
+			<div class="jrClear"></div>
+
+		<?php endforeach;?>
+
+		</div>
+
+		<?php if($show_map == true):?>
+
+		<div id="jr-map-column" class="jrMapColumn">
+
+			<?php echo $this->renderControllerView('geomaps','map_results'); /* MAP */?>
+
+		</div>
+
+		<?php endif;?>
+
+		<div class="jrClear"></div>
+
+	</div>
+
+	<div class="jrClear"></div>
+
+	<?php endif;?>
+
+ 	<?php /* PAGINATION */ ?>
+
+	<?php echo $this->element('pagination',array('position'=>'bottom'));?>
+
+</div>
+
+<?php if(empty($listings)) { echo $this->renderControllerView('listings','listings_noresults'); } ?>
