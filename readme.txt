@@ -1,4 +1,4 @@
-=== TrustYou-Integration-With-JReview ===
+==== TrustYou-Integration-With-JReview ====
 
 In order to integrate TrustYou with JReview, please follow the given instruction:-
 
